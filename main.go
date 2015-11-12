@@ -9,7 +9,7 @@ import (
 )
 
 func realMain() int {
-	l, err := net.Listen("tcp", ":8080")
+	l, err := net.Listen("tcp", ":8700")
 	if err != nil {
 		log.Println(err)
 		return 1
