@@ -1,0 +1,6 @@
+---
+- hosts: default
+  connection: agent
+  tasks:
+    - name: run echo command
+      command: echo 'hello world!'
