@@ -1,2 +1,3 @@
 *.pyc
 /ansible-agent
+/ansible.toml
