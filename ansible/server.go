@@ -41,7 +41,7 @@ func (s *Server) Ping() []byte {
 func (s *Server) ExecCommand(req *http.Request) (int, interface{}) {
 	command := req.FormValue("command")
 	if command == "" {
-		return 500, "command is a required parameter\n"
+		return http.StatusInternalServerError, "command is a required parameter\n"
 	}
 
 	stdout := bytes.NewBuffer(nil)
@@ -64,24 +64,24 @@ func (s *Server) ExecCommand(req *http.Request) (int, interface{}) {
 
 	out, err := json.Marshal(&data)
 	if err != nil {
-		return 500, err.Error()
+		return http.StatusInternalServerError, err.Error()
 	}
-	return 200, out
+	return http.StatusOK, out
 }
 
 func (s *Server) PutFile(req *http.Request) (int, string) {
 	dest := req.FormValue("dest")
 	src, _, err := req.FormFile("src")
 	if err != nil {
-		return 500, err.Error()
+		return http.StatusInternalServerError, err.Error()
 	}
 
 	f, err := os.Create(dest)
 	if err != nil {
-		return 500, err.Error()
+		return http.StatusInternalServerError, err.Error()
 	}
 	defer f.Close()
 
 	io.Copy(f, src)
-	return 200, ""
+	return http.StatusOK, ""
 }
