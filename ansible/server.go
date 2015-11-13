@@ -12,13 +12,12 @@ import (
 	"github.com/go-martini/martini"
 )
 
-type Server struct{}
-
-func NewServer() *Server {
-	return &Server{}
+type Server struct {
+	mux http.Handler
 }
 
-func (s *Server) Serve(l net.Listener) error {
+func NewServer() *Server {
+	s := &Server{}
 	r := martini.NewRouter()
 	r.Get("/ping", s.Ping)
 	r.Post("/exec", s.ExecCommand)
@@ -29,7 +28,12 @@ func (s *Server) Serve(l net.Listener) error {
 	m.Use(martini.Recovery())
 	m.MapTo(r, (*martini.Routes)(nil))
 	m.Action(r.Handle)
-	return http.Serve(l, m)
+	s.mux = m
+	return s
+}
+
+func (s *Server) Serve(l net.Listener) error {
+	return http.Serve(l, s.mux)
 }
 
 func (s *Server) Ping() []byte {
