@@ -2,6 +2,9 @@
 
 import requests
 from ansible.callbacks import vvv
+from ansible.constants import p, get_config
+
+DEFAULT_USE_SSL = get_config(p, 'agent', 'use_ssl', None, False, boolean=True)
 
 class Connection(object):
 
@@ -10,14 +13,18 @@ class Connection(object):
         self.host = host
         self.port = port or 8700
         self.user = user
+        self.proto = 'http'
+        if DEFAULT_USE_SSL:
+            self.proto = 'https'
         self.has_pipelining = False
 
     def _build_url(self, url):
-        return 'http://{host}:{port}{url}'.format(host=self.host, port=self.port, url=url)
+        return '{proto}://{host}:{port}{url}'.format(proto=self.proto, host=self.host, port=self.port, url=url)
 
     def connect(self):
         vvv("ESTABLISH CONNECTION FOR USER: %s" % self.user, host=self.host)
         self.session = requests.Session()
+        self.session.verify = False
         return self
 
     def exec_command(self, cmd, tmp_path, *args, **kwargs):
