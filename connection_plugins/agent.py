@@ -17,12 +17,13 @@ class Connection(object):
 
     def connect(self):
         vvv("ESTABLISH CONNECTION FOR USER: %s" % self.user, host=self.host)
+        self.session = requests.Session()
         return self
 
     def exec_command(self, cmd, tmp_path, *args, **kwargs):
         vvv("EXEC %s" % cmd, host=self.host)
 
-        r = requests.post(self._build_url('/exec'), data={'command': cmd})
+        r = self.session.post(self._build_url('/exec'), data={'command': cmd})
         if r.status_code == 200:
             data = r.json()
             return (data['status'], data['stdin'], data['stdout'], data['stderr'])
@@ -32,13 +33,14 @@ class Connection(object):
     def put_file(self, in_path, out_path):
         vvv("PUT %s TO %s" % (in_path, out_path), host=self.host)
         with open(in_path, 'rb') as fp:
-            r = requests.put(self._build_url('/upload'), data={'dest': out_path}, files={'src': fp})
+            r = self.session.put(self._build_url('/upload'), data={'dest': out_path}, files={'src': fp})
 
         if r.status_code != 200:
             raise errors.AnsibleError("failed to transfer file from %s" % in_path)
 
     def fetch_file(self, in_path, out_path):
         vvv("FETCH %s TO %s" % (in_path, out_path), host=self.host)
+        raise errors.AnsibleError("not unimplemented")
 
     def close(self):
-        pass
+        self.session.close()
