@@ -20,6 +20,7 @@ func NewServer() *Server {
 
 func (s *Server) Serve(l net.Listener) error {
 	r := martini.NewRouter()
+	r.Get("/ping", s.Ping)
 	r.Post("/exec", s.ExecCommand)
 	r.Put("/upload", s.PutFile)
 
@@ -29,6 +30,12 @@ func (s *Server) Serve(l net.Listener) error {
 	m.MapTo(r, (*martini.Routes)(nil))
 	m.Action(r.Handle)
 	return http.Serve(l, m)
+}
+
+func (s *Server) Ping() []byte {
+	serverInfo := map[string]string{}
+	out, _ := json.Marshal(&serverInfo)
+	return out
 }
 
 func (s *Server) ExecCommand(req *http.Request) (int, interface{}) {
