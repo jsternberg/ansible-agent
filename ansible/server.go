@@ -28,6 +28,7 @@ func NewServer() *Server {
 	m := martini.New()
 	m.Use(martini.Logger())
 	m.Use(martini.Recovery())
+	m.Use(LdapAuthenticator())
 	m.MapTo(r, (*martini.Routes)(nil))
 	m.Action(r.Handle)
 	s.mux = m

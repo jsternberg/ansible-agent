@@ -9,11 +9,12 @@ DEFAULT_USE_SSL = get_config(p, 'agent', 'use_ssl', None, False, boolean=True)
 
 class Connection(object):
 
-    def __init__(self, runner, host, port, user, *args, **kwargs):
+    def __init__(self, runner, host, port, user, password, *args, **kwargs):
         self.runner = runner
         self.host = host
         self.port = port or 8700
         self.user = user
+        self.password = password
         self.proto = 'http'
         if DEFAULT_USE_SSL:
             self.proto = 'https'
@@ -25,6 +26,7 @@ class Connection(object):
     def connect(self):
         vvv("ESTABLISH CONNECTION FOR USER: %s" % self.user, host=self.host)
         self.session = requests.Session()
+        self.session.auth = (self.user, self.password)
         self.session.verify = False
         return self
 
