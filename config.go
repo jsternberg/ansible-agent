@@ -1,7 +1,10 @@
 package main
 
+import "github.com/jsternberg/ansible-agent/ansible"
+
 type Config struct {
-	SSL SSLSection
+	SSL  SSLSection
+	Ldap ansible.LdapOptions
 }
 
 type SSLSection struct {

@@ -15,7 +15,7 @@ import (
 )
 
 type Server struct {
-	mux http.Handler
+	m *martini.Martini
 }
 
 func NewServer() *Server {
@@ -28,15 +28,18 @@ func NewServer() *Server {
 	m := martini.New()
 	m.Use(martini.Logger())
 	m.Use(martini.Recovery())
-	m.Use(LdapAuthenticator())
 	m.MapTo(r, (*martini.Routes)(nil))
 	m.Action(r.Handle)
-	s.mux = m
+	s.m = m
 	return s
 }
 
+func (s *Server) ConfigureLDAP(options *LdapOptions) {
+	s.m.Use(LdapAuthenticator(options))
+}
+
 func (s *Server) Serve(l net.Listener) error {
-	return http.Serve(l, s.mux)
+	return http.Serve(l, s.m)
 }
 
 func (s *Server) Ping() []byte {

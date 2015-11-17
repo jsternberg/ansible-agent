@@ -53,6 +53,10 @@ func realMain() int {
 	}
 
 	server := ansible.NewServer()
+	if config.Ldap.Enabled {
+		server.ConfigureLDAP(&config.Ldap)
+	}
+
 	if err := server.Serve(l); err != nil {
 		log.Println(err)
 		return 1
