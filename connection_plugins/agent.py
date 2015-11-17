@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import requests
+from ansible import utils
 from ansible.callbacks import vvv
 from ansible.constants import p, get_config
 
@@ -30,7 +31,17 @@ class Connection(object):
     def exec_command(self, cmd, tmp_path, *args, **kwargs):
         vvv("EXEC %s" % cmd, host=self.host)
 
-        r = self.session.post(self._build_url('/exec'), data={'command': cmd})
+        data = {'command': cmd}
+        executable = kwargs.get('executable')
+        if executable is not None:
+            data['executable'] = executable
+
+        if self.runner.become:
+            data['become'] = 1
+            if self.runner.become_method:
+                data['becomeMethod'] = self.runner.become_method
+
+        r = self.session.post(self._build_url('/exec'), data=data)
         if r.status_code == 200:
             data = r.json()
             return (data['status'], data['stdin'], data['stdout'], data['stderr'])
