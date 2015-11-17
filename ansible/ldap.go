@@ -39,6 +39,12 @@ func LdapAuthenticator(options *LdapOptions) martini.Handler {
 	}
 
 	return func(res http.ResponseWriter, req *http.Request, c martini.Context, log *log.Logger) {
+		// HACK TODO: do not put routing logic in the auth handler
+		// The /ping endpoint does not have auth, so explicitly exclude it here
+		if req.URL.Path == "/ping" {
+			return
+		}
+
 		authHandler := auth.BasicFunc(func(username, password string) bool {
 			// create the ldap server connection
 			var conn *ldap.LDAPConnection
