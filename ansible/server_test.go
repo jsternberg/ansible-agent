@@ -21,7 +21,7 @@ func TestServerPing(t *testing.T) {
 	res := httptest.NewRecorder()
 
 	server := NewServer()
-	server.mux.ServeHTTP(res, req)
+	server.ServeHTTP(res, req)
 
 	if assert.Equal(200, res.Code) {
 		var out map[string]string
@@ -48,7 +48,7 @@ func TestServerExec(t *testing.T) {
 	res := httptest.NewRecorder()
 
 	server := NewServer()
-	server.mux.ServeHTTP(res, req)
+	server.ServeHTTP(res, req)
 
 	if assert.Equal(200, res.Code) {
 		var out map[string]interface{}

@@ -129,3 +129,7 @@ func (s *Server) PutFile(req *http.Request) (int, string) {
 	io.Copy(f, src)
 	return http.StatusOK, ""
 }
+
+func (s *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	s.m.ServeHTTP(res, req)
+}
