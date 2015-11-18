@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import requests
-from ansible import utils
+from ansible import errors, utils
 from ansible.callbacks import vvv
 from ansible.constants import p, get_config
 
@@ -30,7 +30,7 @@ class Connection(object):
         self.session.verify = False
         return self
 
-    def exec_command(self, cmd, tmp_path, *args, **kwargs):
+    def exec_command(self, cmd, tmp_path, sudoable=False, **kwargs):
         vvv("EXEC %s" % cmd, host=self.host)
 
         data = {'command': cmd}
@@ -38,7 +38,7 @@ class Connection(object):
         if executable is not None:
             data['executable'] = executable
 
-        if self.runner.become:
+        if self.runner.become and sudoable:
             data['become'] = 1
             if self.runner.become_method:
                 data['becomeMethod'] = self.runner.become_method
