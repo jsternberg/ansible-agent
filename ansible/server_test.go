@@ -1,10 +1,16 @@
 package ansible
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -72,6 +78,47 @@ func TestServerExec(t *testing.T) {
 		stderr, ok := out["stderr"]
 		if assert.True(ok, "missing 'stderr' from json response") {
 			assert.Equal("", stderr.(string))
+		}
+	}
+}
+
+func TestServerPutFile(t *testing.T) {
+	assert := assert.New(t)
+
+	tmpdir, err := ioutil.TempDir(os.TempDir(), "ansible-agent")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpdir)
+
+	var buffer bytes.Buffer
+	bodyWriter := multipart.NewWriter(&buffer)
+
+	fileWriter, err := bodyWriter.CreateFormFile("src", "test.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	io.WriteString(fileWriter, "hello world\n")
+
+	outputFile := filepath.Join(tmpdir, "test.txt")
+	bodyWriter.WriteField("dest", outputFile)
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+
+	req, err := http.NewRequest("PUT", "/upload", &buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("Content-Type", contentType)
+	res := httptest.NewRecorder()
+
+	server := NewServer()
+	server.ServeHTTP(res, req)
+
+	if assert.Equal(200, res.Code) {
+		content, err := ioutil.ReadFile(outputFile)
+		if assert.NoError(err) {
+			assert.Equal("hello world\n", string(content))
 		}
 	}
 }
