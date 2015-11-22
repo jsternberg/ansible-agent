@@ -1,11 +1,13 @@
 #!/usr/bin/python
 
+import os
 import requests
 from ansible import errors, utils
 from ansible.callbacks import vvv
 from ansible.constants import p, get_config
 
 DEFAULT_USE_SSL = get_config(p, 'agent', 'use_ssl', None, False, boolean=True)
+CERTIFICATE = get_config(p, 'agent', 'certificate', None, None)
 
 class Connection(object):
 
@@ -27,6 +29,8 @@ class Connection(object):
         vvv("ESTABLISH CONNECTION FOR USER: %s" % self.user, host=self.host)
         self.session = requests.Session()
         self.session.auth = (self.user, self.password)
+        if CERTIFICATE:
+            self.session.cert = os.path.expanduser(CERTIFICATE)
         self.session.verify = False
         return self
 

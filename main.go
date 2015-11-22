@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -48,6 +49,17 @@ func realMain() int {
 
 		tlsConfig := tls.Config{
 			Certificates: []tls.Certificate{cert},
+			ClientCAs:    x509.NewCertPool(),
+			ClientAuth:   tls.NoClientCert,
+		}
+		if config.SSL.ClientCA != "" {
+			data, err := ioutil.ReadFile(config.SSL.ClientCA)
+			if err != nil {
+				log.Println(err)
+				return 1
+			}
+			tlsConfig.ClientCAs.AppendCertsFromPEM(data)
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 		}
 		l = tls.NewListener(l, &tlsConfig)
 	}

@@ -11,6 +11,7 @@ type SSLSection struct {
 	Enabled     bool
 	Certificate string
 	PrivateKey  string `toml:"private_key"`
+	ClientCA    string `toml:"client_ca"`
 }
 
 func DefaultConfig() *Config {
