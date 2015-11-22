@@ -1,0 +1,28 @@
+# Configures the daemon to use SSL.
+# This is recommended for all agents.
+[ssl]
+# enabled = false
+
+# The SSL certificate for the server. This will most likely be a self-signed
+# certificate. If you want the remote machine to verify the server, this file
+# should also be made available to the clients in a different method.
+# certificate =
+
+# The SSL private key for the server. Keep this secret.
+# private_key =
+
+# Enables password authentication with LDAP.
+[ldap]
+# enabled = false
+
+# LDAP connection url. This must be in the format `$protocol://$host[:$port]`.
+# The protocol can be either `ldap` or `ldaps`. If using plain text, the
+# default port is 389. If SSL, the default port is 636.
+# host = "ldap://127.0.0.1:389"
+
+# Base DN for the search tree.
+# base_dn = "dn=example,dn=com"
+
+# Filter to use for finding the user. This should be in printf format with
+# exactly one `%s`. The string inserted will already by escaped for LDAP.
+# user_filter = "(uid=%s)"
