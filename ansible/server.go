@@ -34,8 +34,13 @@ func NewServer() *Server {
 	return s
 }
 
-func (s *Server) ConfigureLDAP(options *LdapOptions) {
-	s.m.Use(LdapAuthenticator(options))
+func (s *Server) ConfigureLDAP(options *LdapOptions) error {
+	handler, err := LdapAuthenticator(options)
+	if err != nil {
+		return err
+	}
+	s.m.Use(handler)
+	return nil
 }
 
 func (s *Server) Serve(l net.Listener) error {

@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
+	"regexp"
+	"strconv"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/auth"
 	"github.com/mavricknz/ldap"
 )
+
+var HostExpr = regexp.MustCompile(`^(ldaps?)://([\w-.]+)(:(\d+))?$`)
 
 type LdapOptions struct {
 	Enabled    bool
@@ -21,20 +24,37 @@ type LdapOptions struct {
 	UserFilter string `toml:"user_filter"`
 }
 
-func LdapAuthenticator(options *LdapOptions) martini.Handler {
-	if strings.HasPrefix(options.Host, "ldaps://") {
-		options.Host = options.Host[8:]
-		options.SSL = true
-	} else if strings.HasPrefix(options.Host, "ldap://") {
-		options.Host = options.Host[7:]
-		options.SSL = false
-	}
+type ldapConfig struct {
+	Host string
+	Port uint16
+	SSL  bool
+}
 
-	if options.Port == 0 {
-		if options.SSL {
-			options.Port = 636
+func LdapAuthenticator(options *LdapOptions) (martini.Handler, error) {
+	hostInfo := HostExpr.FindStringSubmatch(options.Host)
+
+	config := &ldapConfig{}
+	switch hostInfo[1] {
+	case "ldap":
+		config.SSL = false
+	case "ldaps":
+		config.SSL = true
+	default:
+		return nil, fmt.Errorf("invalid ldap protocol: %s", hostInfo[1])
+	}
+	config.Host = hostInfo[2]
+
+	if hostInfo[4] != "" {
+		port, err := strconv.ParseUint(hostInfo[4], 10, 16)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse ldap port: %s", err)
+		}
+		config.Port = uint16(port)
+	} else {
+		if config.SSL {
+			config.Port = 636
 		} else {
-			options.Port = 389
+			config.Port = 389
 		}
 	}
 
@@ -48,13 +68,13 @@ func LdapAuthenticator(options *LdapOptions) martini.Handler {
 		authHandler := auth.BasicFunc(func(username, password string) bool {
 			// create the ldap server connection
 			var conn *ldap.LDAPConnection
-			if options.SSL {
+			if config.SSL {
 				tlsConfig := tls.Config{
-					ServerName: options.Host,
+					ServerName: config.Host,
 				}
-				conn = ldap.NewLDAPSSLConnection(options.Host, options.Port, &tlsConfig)
+				conn = ldap.NewLDAPSSLConnection(config.Host, config.Port, &tlsConfig)
 			} else {
-				conn = ldap.NewLDAPConnection(options.Host, options.Port)
+				conn = ldap.NewLDAPConnection(config.Host, config.Port)
 			}
 
 			// attempt to connect to the ldap server
@@ -98,5 +118,5 @@ func LdapAuthenticator(options *LdapOptions) martini.Handler {
 		})
 		authenticate := authHandler.(func(http.ResponseWriter, *http.Request, martini.Context))
 		authenticate(res, req, c)
-	}
+	}, nil
 }
