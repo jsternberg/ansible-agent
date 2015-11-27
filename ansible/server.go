@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/go-martini/martini"
 )
@@ -81,6 +83,17 @@ func (s *Server) ExecCommand(req *http.Request) (int, interface{}) {
 		becomeMethod = "sudo"
 	}
 
+	// if the /exec request contains stdin, we are likely pipelining
+	// if some other error happens, we want to report the error and exit
+	var stdin multipart.File
+	if strings.HasPrefix(req.Header.Get("Content-Type"), "multipart/form-data") {
+		var err error
+		stdin, _, err = req.FormFile("stdin")
+		if err != nil && err != http.ErrMissingFile {
+			return http.StatusInternalServerError, fmt.Sprintf("%s\n", err.Error())
+		}
+	}
+
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
 
@@ -97,6 +110,7 @@ func (s *Server) ExecCommand(req *http.Request) (int, interface{}) {
 	cmdArgs = append(cmdArgs, executable, "-c", command)
 
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	cmd.Stdin = stdin
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err := cmd.Run()

@@ -8,6 +8,7 @@
 
 import os
 import requests
+from StringIO import StringIO
 from ansible import errors, utils
 from ansible.callbacks import vvv
 from ansible.constants import p, get_config
@@ -26,7 +27,7 @@ class Connection(object):
         self.proto = 'http'
         if DEFAULT_USE_SSL:
             self.proto = 'https'
-        self.has_pipelining = False
+        self.has_pipelining = True
 
     def _build_url(self, url):
         return '{proto}://{host}:{port}{url}'.format(proto=self.proto, host=self.host, port=self.port, url=url)
@@ -40,7 +41,7 @@ class Connection(object):
         self.session.verify = False
         return self
 
-    def exec_command(self, cmd, tmp_path, sudoable=False, **kwargs):
+    def exec_command(self, cmd, tmp_path, sudoable=False, in_data=None, **kwargs):
         vvv("EXEC %s" % cmd, host=self.host)
 
         data = {'command': cmd}
@@ -53,7 +54,11 @@ class Connection(object):
             if self.runner.become_method:
                 data['becomeMethod'] = self.runner.become_method
 
-        r = self.session.post(self._build_url('/exec'), data=data)
+        files = {}
+        if in_data:
+            files['stdin'] = StringIO(in_data)
+
+        r = self.session.post(self._build_url('/exec'), data=data, files=files)
         if r.status_code == 200:
             data = r.json()
             return (data['status'], data['stdin'], data['stdout'], data['stderr'])
