@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -85,13 +85,33 @@ func (s *Server) ExecCommand(req *http.Request) (int, interface{}) {
 
 	// if the /exec request contains stdin, we are likely pipelining
 	// if some other error happens, we want to report the error and exit
-	var stdin multipart.File
+	// read all of stdin and write to a temporary file, then pipe that file to the process
+	// interpreters have a bad habit of executing files before they have finished transferring
+	// and can be a vector for security vulnerabilities when a file is only half-read.
+	var stdin io.ReadCloser
 	if strings.HasPrefix(req.Header.Get("Content-Type"), "multipart/form-data") {
-		var err error
-		stdin, _, err = req.FormFile("stdin")
+		input, _, err := req.FormFile("stdin")
 		if err != nil && err != http.ErrMissingFile {
 			return http.StatusInternalServerError, fmt.Sprintf("%s\n", err.Error())
 		}
+
+		tmpfile, err := ioutil.TempFile(os.TempDir(), "ansible-stdin")
+		if err != nil {
+			return http.StatusInternalServerError, fmt.Sprintf("%s\n", err.Error())
+		}
+		defer os.Remove(tmpfile.Name())
+
+		_, err = io.Copy(tmpfile, input)
+		tmpfile.Close()
+		if err != nil {
+			return http.StatusInternalServerError, fmt.Sprintf("%s\n", err.Error())
+		}
+
+		stdin, err = os.Open(tmpfile.Name())
+		if err != nil {
+			return http.StatusInternalServerError, fmt.Sprintf("%s\n", err.Error())
+		}
+		defer stdin.Close()
 	}
 
 	stdout := bytes.NewBuffer(nil)
