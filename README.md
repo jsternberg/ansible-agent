@@ -1,5 +1,12 @@
 Ansible Agent
 -------------
+**ARCHIVED:** This project is unused and may be in an incomplete state.
+The code is left here just in case it ends up being helpful for someone
+who has a similar need and wants some kind of base to write something
+for themselves, but this project is unmaintained and probably doesn't
+work properly. The remainder of this README is kept as-is for archival
+purposes.
+
 The Ansible Agent is a simple daemon used as a transport for Ansible.
 
 Ansible traditionally operates over the SSH daemon that is installed on
